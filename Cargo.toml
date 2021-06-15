@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 probe-rs = { git = "https://github.com/diondokter/probe-rs", branch = "multicore" }
+anyhow = "1.0.41"
