@@ -21,14 +21,16 @@ fn main() -> Result<()> {
     let app_port = 2;
     let net_port = 3;
 
-    println!("Starting recovery");
-    recover_cores(&mut iface, &[app_port, net_port])?;
+    println!("Starting recovery for application");
+    recover_core(&mut iface, app_port)?;
+    println!("Starting recovery for net");
+    recover_core(&mut iface, net_port)?;
     println!("Done");
 
     Ok(())
 }
 
-fn recover_cores(iface: &mut Box<dyn ArmProbeInterface>, ports: &[u8]) -> Result<()> {
+fn recover_core(iface: &mut Box<dyn ArmProbeInterface>, port: u8) -> Result<()> {
     const RESET: u8 = 0x00;
     const ERASEALL: u8 = 0x04;
     const ERASEALLSTATUS: u8 = 0x08;
@@ -36,33 +38,21 @@ fn recover_cores(iface: &mut Box<dyn ArmProbeInterface>, ports: &[u8]) -> Result
     const SECUREAPPROTECTDISABLE: u8 = 0x14;
 
     println!("  Reset");
-    for port in ports {
-        println!("    {}", port);
-        iface.write_raw_ap_register(*port, RESET, 1)?;
-        iface.write_raw_ap_register(*port, RESET, 0)?;
-    }
+    iface.write_raw_ap_register(port, RESET, 1)?;
+    iface.write_raw_ap_register(port, RESET, 0)?;
 
     println!("  Erase");
-    for port in ports {
-        println!("    {}", port);
-        iface.write_raw_ap_register(*port, ERASEALL, 1)?;
-        // Wait for erase done
-        while iface.read_raw_ap_register(*port, ERASEALLSTATUS)? != 0 {}
-    }
+    iface.write_raw_ap_register(port, ERASEALL, 1)?;
+    // Wait for erase done
+    while iface.read_raw_ap_register(port, ERASEALLSTATUS)? != 0 {}
 
-    // println!("  Reset again");
-    // for port in ports {
-    //     println!("    {}", port);
-    //     iface.write_raw_ap_register(*port, RESET, 1)?;
-    //     iface.write_raw_ap_register(*port, RESET, 0)?;
-    // }
+    println!("  Reset again");
+    iface.write_raw_ap_register(port, RESET, 1)?;
+    iface.write_raw_ap_register(port, RESET, 0)?;
 
     println!("  Checks");
-    for port in ports {
-        println!("    {}", port);
-        println!("      {:0X}", iface.read_raw_ap_register(*port, APPROTECTDISABLE)?);
-        println!("      {:0X}", iface.read_raw_ap_register(*port, SECUREAPPROTECTDISABLE)?);
-    }
+    println!("    {:0X}", iface.read_raw_ap_register(port, APPROTECTDISABLE)?);
+    println!("    {:0X}", iface.read_raw_ap_register(port, SECUREAPPROTECTDISABLE)?);
 
     Ok(())
 }
